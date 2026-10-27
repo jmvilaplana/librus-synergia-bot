@@ -1,0 +1,21 @@
+[Unit]
+Description=Librus Synergia Telegram Bot & Web Dashboard (Rottenmeier)
+After=network.target
+
+[Service]
+Type=simple
+User=your_username
+WorkingDirectory=/path/to/librus-synergia-bot
+ExecStart=/path/to/librus-synergia-bot/venv/bin/python -u librus_bot.py
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+# Optional Environment Overrides:
+# Environment=TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+# Environment=LIBRUS_AUTH_PASSWORD=your_secure_password
+# Environment=LIBRUS_ADMIN_CHAT_ID=123456789
+# Environment=LIBRUS_WEB_PORT=8088
+
+[Install]
+WantedBy=multi-user.target

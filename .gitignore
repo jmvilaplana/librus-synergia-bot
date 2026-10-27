@@ -1,0 +1,37 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments & Virtual Envs
+.env
+.env.*
+*.env
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Configuration & Secrets (STRICTLY FORBIDDEN FROM COMMIT)
+librus_config.json
+
+# SQLite Databases & Storage
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Logs & runtime artifacts
+*.log
+logs/
+
+# IDE & OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

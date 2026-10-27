@@ -1,0 +1,22 @@
+{
+  "telegram": {
+    "bot_token": "YOUR_TELEGRAM_BOT_TOKEN_HERE",
+    "chat_id": "YOUR_ADMIN_TELEGRAM_CHAT_ID_HERE"
+  },
+  "students": [
+    {
+      "name": "Student1",
+      "username": "1234567u",
+      "password": "your_librus_password_here",
+      "icon": "👧",
+      "enabled": true
+    },
+    {
+      "name": "Student2",
+      "username": "7654321u",
+      "password": "your_librus_password_here",
+      "icon": "👦",
+      "enabled": true
+    }
+  ]
+}
