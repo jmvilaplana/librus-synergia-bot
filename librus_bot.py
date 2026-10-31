@@ -495,6 +495,11 @@ class LibrusTelegramBot:
         self.log_event(f"Intervalo programado actualizado a {mins} min")
         self.force_check_event.set()
 
+    def set_bot_enabled(self, enabled: bool) -> None:
+        db.set_bot_enabled(enabled)
+        if enabled:
+            self.force_check_event.set()
+
     async def trigger_check_now(self) -> None:
         if not self.session:
             return
@@ -2331,6 +2336,9 @@ class LibrusTelegramBot:
                 f"➕ /add_pupil - Añadir a tu propio alumno\n"
                 f"👥 /pupils - Ver tus alumnos\n"
                 f"🔍 /check - Comprobar notas y tareas ahora\n"
+                f"⏸️ /pausar - Desactivar avisos automáticos\n"
+                f"▶️ /activar - Reanudar el monitor escolar\n"
+                f"ℹ️ /estado - Ver si está activa o en pausa\n"
                 f"❌ /cancel - Cancelar operación en curso"
                 f"{admin_section}"
             )
@@ -2364,6 +2372,41 @@ class LibrusTelegramBot:
             sent = await self.run_check_for_chat(session, chat_id)
             if sent == 0:
                 await self.send_msg(session, chat_id, "✨ No hay nuevas calificaciones, deberes ni exámenes pendientes para tus alumnos.")
+
+        elif cmd in ["/pausar", "/desactivar", "/pause", "/stop"]:
+            self.set_bot_enabled(False)
+            self.log_event(f"Srta. Rottenmeier DESACTIVADA por {first_name} (chat {chat_id})")
+            await self.send_msg(
+                session,
+                chat_id,
+                "⏸️ <b>Srta. Rottenmeier desactivada.</b>\n\n"
+                "Las revisiones automáticas periódicas y las alertas de Telegram quedan en pausa.\n"
+                "Puedes volver a activarla cuando quieras escribiendo <code>/activar</code> o desde el interruptor en la web."
+            )
+
+        elif cmd in ["/activar", "/reanudar", "/start_monitor", "/play"]:
+            self.set_bot_enabled(True)
+            self.log_event(f"Srta. Rottenmeier ACTIVADA por {first_name} (chat {chat_id})")
+            await self.send_msg(
+                session,
+                chat_id,
+                "✅ <b>Srta. Rottenmeier activada.</b>\n\n"
+                "El monitor escolar vuelve a estar en marcha. Comprobando novedades..."
+            )
+
+        elif cmd in ["/estado", "/status"]:
+            is_active = db.is_bot_enabled()
+            st_icon = "✅" if is_active else "⏸️"
+            st_text = "Activa (revisiones automáticas funcionando)" if is_active else "En pausa / Desactivada"
+            last_chk = self.last_check_time
+            await self.send_msg(
+                session,
+                chat_id,
+                f"ℹ️ <b>Estado de la Srta. Rottenmeier:</b>\n\n"
+                f"{st_icon} <b>Estado:</b> {st_text}\n"
+                f"🕒 <b>Última revisión:</b> <code>{last_chk}</code>\n\n"
+                f"Usa <code>/pausar</code> o <code>/activar</code> para cambiar su estado."
+            )
 
     async def start(self):
         self.log_event("Bot de Librus iniciado.")
@@ -2403,6 +2446,10 @@ class LibrusTelegramBot:
                         pass
 
                     try:
+                        if not db.is_bot_enabled():
+                            self.log_event("Srta. Rottenmeier está desactivada. Se omite la revisión periódica.")
+                            continue
+
                         self.log_event("Ejecutando revisión periódica automática...")
                         delivered = await self.run_full_periodic_check(session)
                         self.last_check_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")

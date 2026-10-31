@@ -176,6 +176,7 @@ def init_db() -> None:
     # Inicializar contraseña de registro y admin si no existen
     cur.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('auth_password', ?)", (AUTH_PASSWORD_DEFAULT,))
     cur.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('admin_chat_id', ?)", (str(ADMIN_CHAT_ID_DEFAULT),))
+    cur.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('bot_enabled', '1')")
     conn.commit()
 
     # Comprobar columnas en chats
@@ -218,6 +219,16 @@ def get_auth_password() -> str:
 
 def set_auth_password(new_pass: str) -> None:
     set_setting("auth_password", new_pass.strip())
+
+
+def is_bot_enabled() -> bool:
+    """Indica si la Srta. Rottenmeier está activa o pausada para comprobaciones automáticas."""
+    return get_setting("bot_enabled", "1") == "1"
+
+
+def set_bot_enabled(enabled: bool) -> None:
+    """Activa o desactiva la Srta. Rottenmeier."""
+    set_setting("bot_enabled", "1" if enabled else "0")
 
 
 def get_admin_chat_id() -> int:

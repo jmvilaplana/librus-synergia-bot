@@ -142,6 +142,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             background: rgba(16, 185, 129, 0.12);
             color: var(--accent-green);
             border: 1px solid rgba(16, 185, 129, 0.3);
+            transition: all 0.25s ease;
+        }
+
+        .badge-status.paused {
+            background: rgba(239, 68, 68, 0.12);
+            color: var(--accent-red);
+            border: 1px solid rgba(239, 68, 68, 0.35);
         }
 
         .status-dot {
@@ -151,6 +158,118 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             background: var(--accent-green);
             box-shadow: 0 0 8px var(--accent-green);
             animation: pulse 2s infinite;
+            transition: all 0.25s ease;
+        }
+
+        .badge-status.paused .status-dot {
+            background: var(--accent-red);
+            box-shadow: 0 0 8px var(--accent-red);
+            animation: none;
+        }
+
+        /* Switch de activación de la Srta. Rottenmeier */
+        .bot-switch-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(30, 41, 59, 0.85);
+            border: 1px solid var(--border-color);
+            padding: 5px 12px;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .bot-switch-wrap:hover {
+            border-color: var(--border-hover);
+            background: rgba(30, 41, 59, 1);
+        }
+
+        .bot-switch-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 38px;
+            height: 20px;
+            vertical-align: middle;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #475569;
+            transition: 0.25s ease;
+            border-radius: 20px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.25s ease;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: var(--accent-green);
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(18px);
+        }
+
+        .banner-paused {
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.16), rgba(245, 158, 11, 0.16));
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            font-size: 0.88rem;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.1);
+        }
+
+        .banner-paused .banner-btn {
+            background: rgba(239, 68, 68, 0.25);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+
+        .banner-paused .banner-btn:hover {
+            background: rgba(239, 68, 68, 0.45);
         }
 
         @keyframes pulse {
@@ -848,7 +967,19 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 </div>
             </div>
             <div class="header-actions">
-                <div class="badge-status">
+                <!-- Switch Principal de Activación -->
+                <div class="bot-switch-wrap" onclick="triggerToggleClick(event)" title="Pulsa para activar o desactivar la Srta. Rottenmeier">
+                    <span class="bot-switch-label" id="botSwitchLabel">
+                        <span>Srta. Rottenmeier:</span>
+                        <b id="botSwitchStateText" style="color:var(--accent-green)">ACTIVA</b>
+                    </span>
+                    <label class="toggle-switch" onclick="event.stopPropagation()">
+                        <input type="checkbox" id="botActiveToggle" onchange="toggleBotActive(this.checked)" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="badge-status" id="badgeStatusWrap">
                     <div class="status-dot"></div>
                     <span id="botStatusText">En línea</span>
                 </div>
@@ -860,6 +991,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 </button>
             </div>
         </header>
+
+        <!-- Banner de aviso cuando Rottenmeier está desactivada -->
+        <div class="banner-paused" id="bannerPaused">
+            <div>
+                <b>⏸️ Srta. Rottenmeier está desactivada:</b> Las comprobaciones automáticas periódicas y las alertas de Telegram están en pausa.
+            </div>
+            <button class="banner-btn" onclick="toggleBotActive(true)">▶️ Activar ahora</button>
+        </div>
 
         <!-- Barra informativa -->
         <div class="info-bar">
@@ -881,6 +1020,21 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             <div class="modal-header">
                 <h2>⚙️ Configuración & Herramientas</h2>
                 <button class="btn-close" onclick="closeModal('configModal')">✕</button>
+            </div>
+
+            <!-- Interruptor General de la Srta. Rottenmeier -->
+            <div class="form-group">
+                <label>Estado del Monitor:</label>
+                <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.03); padding:12px 16px; border-radius:10px; border:1px solid rgba(255,255,255,0.07);">
+                    <div>
+                        <div style="font-weight:700; color:var(--text-primary);" id="modalBotStatusTitle">Srta. Rottenmeier Activa</div>
+                        <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;" id="modalBotStatusDesc">Revisiones periódicas y alertas a Telegram en funcionamiento.</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="modalBotActiveToggle" onchange="toggleBotActive(this.checked)" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
             </div>
 
             <!-- Frecuencia de Comprobación -->
@@ -1221,6 +1375,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         }
 
         function renderOverview(data) {
+            if (typeof data.bot_enabled !== 'undefined') {
+                updateBotStatusUI(data.bot_enabled);
+            }
             document.getElementById('lastSyncText').innerText = data.last_sync || 'Recién sincronizado';
             const pupils = (data.pupils || []).slice();
             pupils.sort((a, b) => {
@@ -1448,6 +1605,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 const res = await fetch(BASE_URL + 'api/status');
                 const data = await res.json();
 
+                if (typeof data.bot_enabled !== 'undefined') {
+                    updateBotStatusUI(data.bot_enabled);
+                }
+
                 const mins = data.check_interval_minutes || 15;
                 const sel = document.getElementById('intervalSelect');
                 if (['5','10','15','30','45','60'].includes(String(mins))) {
@@ -1520,6 +1681,83 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             }
         }
 
+        function triggerToggleClick(event) {
+            const toggle = document.getElementById('botActiveToggle');
+            if (toggle && event.target !== toggle) {
+                toggle.checked = !toggle.checked;
+                toggleBotActive(toggle.checked);
+            }
+        }
+
+        async function toggleBotActive(enabled) {
+            const toggle = document.getElementById('botActiveToggle');
+            const modalToggle = document.getElementById('modalBotActiveToggle');
+            if (toggle) toggle.checked = enabled;
+            if (modalToggle) modalToggle.checked = enabled;
+            
+            updateBotStatusUI(enabled);
+            showToast(enabled ? "▶️ Activando Srta. Rottenmeier..." : "⏸️ Desactivando Srta. Rottenmeier...");
+
+            try {
+                const res = await fetch(BASE_URL + 'api/bot-toggle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: enabled })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    updateBotStatusUI(data.bot_enabled);
+                    showToast(data.message || (data.bot_enabled ? "✅ Srta. Rottenmeier activada" : "⏸️ Srta. Rottenmeier desactivada"));
+                } else {
+                    showToast(data.error || "Error al cambiar estado", true);
+                    if (toggle) toggle.checked = !enabled;
+                    if (modalToggle) modalToggle.checked = !enabled;
+                    updateBotStatusUI(!enabled);
+                }
+            } catch (e) {
+                showToast("Error de conexión al cambiar estado", true);
+                if (toggle) toggle.checked = !enabled;
+                if (modalToggle) modalToggle.checked = !enabled;
+                updateBotStatusUI(!enabled);
+            }
+        }
+
+        function updateBotStatusUI(enabled) {
+            const statusWrap = document.getElementById('badgeStatusWrap');
+            const statusText = document.getElementById('botStatusText');
+            const switchStateText = document.getElementById('botSwitchStateText');
+            const banner = document.getElementById('bannerPaused');
+            const toggle = document.getElementById('botActiveToggle');
+            const modalToggle = document.getElementById('modalBotActiveToggle');
+            const modalStatusTitle = document.getElementById('modalBotStatusTitle');
+            const modalStatusDesc = document.getElementById('modalBotStatusDesc');
+
+            if (toggle) toggle.checked = enabled;
+            if (modalToggle) modalToggle.checked = enabled;
+
+            if (enabled) {
+                if (statusWrap) statusWrap.classList.remove('paused');
+                if (statusText) statusText.innerText = "Activa";
+                if (switchStateText) {
+                    switchStateText.innerText = "ACTIVA";
+                    switchStateText.style.color = "var(--accent-green)";
+                }
+                if (banner) banner.style.display = 'none';
+                if (modalStatusTitle) modalStatusTitle.innerText = "Srta. Rottenmeier Activa";
+                if (modalStatusDesc) modalStatusDesc.innerText = "Revisiones periódicas y alertas a Telegram en funcionamiento.";
+            } else {
+                if (statusWrap) statusWrap.classList.add('paused');
+                if (statusText) statusText.innerText = "Pausada";
+                if (switchStateText) {
+                    switchStateText.innerText = "EN PAUSA";
+                    switchStateText.style.color = "var(--accent-red)";
+                }
+                if (banner) banner.style.display = 'flex';
+                if (modalStatusTitle) modalStatusTitle.innerText = "Srta. Rottenmeier en Pausa";
+                if (modalStatusDesc) modalStatusDesc.innerText = "Las revisiones periódicas y alertas a Telegram están desactivadas.";
+            }
+        }
+
         // Carga inicial
         loadOverview();
         // Refresco de fondo cada 20 segundos
@@ -1541,6 +1779,7 @@ class WebPanel:
         self.app.router.add_get("/avatar.jpg", self.handle_avatar)
         self.app.router.add_get("/api/overview", self.handle_overview)
         self.app.router.add_post("/api/overview/refresh", self.handle_overview_refresh)
+        self.app.router.add_post("/api/bot-toggle", self.handle_bot_toggle)
         self.app.router.add_post("/api/task-toggle", self.handle_task_toggle)
         self.app.router.add_get("/api/status", self.handle_status)
         self.app.router.add_post("/api/settings", self.handle_settings)
@@ -1565,6 +1804,7 @@ class WebPanel:
             asyncio.create_task(self.bot.refresh_dashboard_overview())
         return web.json_response({
             "ok": True,
+            "bot_enabled": db.is_bot_enabled(),
             "last_sync": last_sync,
             "pupils": cached
         })
@@ -1573,9 +1813,27 @@ class WebPanel:
         new_data = await self.bot.refresh_dashboard_overview()
         return web.json_response({
             "ok": True,
+            "bot_enabled": db.is_bot_enabled(),
             "last_sync": getattr(self.bot, "last_overview_time", "Ahora mismo"),
             "pupils": new_data
         })
+
+    async def handle_bot_toggle(self, request: web.Request) -> web.Response:
+        try:
+            data = await request.json()
+            enabled = bool(data.get("enabled", True))
+            db.set_bot_enabled(enabled)
+            if hasattr(self.bot, "set_bot_enabled"):
+                self.bot.set_bot_enabled(enabled)
+            state_str = "ACTIVADA" if enabled else "DESACTIVADA (en pausa)"
+            self.bot.log_event(f"Srta. Rottenmeier {state_str} desde el panel web")
+            return web.json_response({
+                "ok": True,
+                "bot_enabled": enabled,
+                "message": "✅ Srta. Rottenmeier activada" if enabled else "⏸️ Srta. Rottenmeier desactivada"
+            })
+        except Exception as e:
+            return web.json_response({"ok": False, "error": str(e)}, status=400)
 
     async def handle_task_toggle(self, request: web.Request) -> web.Response:
         try:
@@ -1612,6 +1870,7 @@ class WebPanel:
         status_data = {
             "ok": True,
             "running": True,
+            "bot_enabled": db.is_bot_enabled(),
             "check_interval_minutes": interval,
             "last_check": getattr(self.bot, "last_check_time", "Nunca"),
             "pupils": safe_pupils,
@@ -1623,14 +1882,26 @@ class WebPanel:
     async def handle_settings(self, request: web.Request) -> web.Response:
         try:
             data = await request.json()
-            mins = int(data.get("check_interval_minutes", 15))
-            if mins < 1:
-                return web.json_response({"ok": False, "error": "Intervalo debe ser >= 1 min"})
-            db.set_setting("check_interval_minutes", str(mins))
-            if hasattr(self.bot, "update_interval"):
-                self.bot.update_interval(mins)
-            self.bot.log_event(f"Intervalo de comprobación actualizado a {mins} minutos")
-            return web.json_response({"ok": True, "check_interval_minutes": mins})
+            if "bot_enabled" in data:
+                enabled = bool(data["bot_enabled"])
+                db.set_bot_enabled(enabled)
+                if hasattr(self.bot, "set_bot_enabled"):
+                    self.bot.set_bot_enabled(enabled)
+                state_str = "ACTIVADA" if enabled else "DESACTIVADA (en pausa)"
+                self.bot.log_event(f"Srta. Rottenmeier {state_str} desde configuración")
+
+            mins = int(data.get("check_interval_minutes", 0))
+            if mins >= 1:
+                db.set_setting("check_interval_minutes", str(mins))
+                if hasattr(self.bot, "update_interval"):
+                    self.bot.update_interval(mins)
+                self.bot.log_event(f"Intervalo de comprobación actualizado a {mins} minutos")
+
+            return web.json_response({
+                "ok": True,
+                "bot_enabled": db.is_bot_enabled(),
+                "check_interval_minutes": int(db.get_setting("check_interval_minutes", "15"))
+            })
         except Exception as e:
             return web.json_response({"ok": False, "error": str(e)}, status=400)
 
